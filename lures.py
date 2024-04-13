@@ -1,5 +1,5 @@
 from typing import List, Tuple
-
+import os
 class LureNotifier:
     TERMS = ['cisco', 'gmail', 'login', 'mail', 'paying', 'paypal', '.gov']
 
@@ -10,7 +10,7 @@ class LureNotifier:
         :param domains: list of domains as strings
         :return: list of tuples (domain, [matched_terms...])
         """
-        raise NotImplementedError()
+
 
     def notify(self, lures: List[Tuple[str, List[str]]]) -> List[Tuple[str, List[str]]]:
         """
