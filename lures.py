@@ -3,9 +3,12 @@ import os
 
 
 class LureNotifier:
-    TERMS = ['cisco', 'gmail', 'login', 'mail', 'paying', 'paypal', '.gov']
+    TARGET_TERMS: List[str] = [
+        'cisco', 'gmail', 'login', 'mail', 'paying', 'paypal', '.gov'
+    ]
 
-    def identify_lures(self, domains: List[str]) -> List[Tuple[str, List[str]]]:
+    @staticmethod
+    def identify_lures(domains: List[str]) -> List[Tuple[str, List[str]]]:
         """
         Identifies potential phishing lures from a list of candidate domains.
         A domain qualifies as a potential lure if and only if it contains at
@@ -13,15 +16,11 @@ class LureNotifier:
         :param domains: list of domains as strings
         :return: list of tuples (domain, [matched_terms...])
         """
-        target_terms: List[str] = [
-            'cisco', 'gmail', 'login', 'mail', 'paying', 'paypal', '.gov'
-        ]
-
         potential_lures: dict[str, List[str]] = {}
         # Iterate thru each domain name, adding any ID'd target terms to a list
         for domain in domains:
             matched_terms: List[str] = []
-            for target_term in target_terms:
+            for target_term in LureNotifier.TARGET_TERMS:
                 if target_term in domain:
                     matched_terms.append(target_term)
             # If we have at least 2 target terms in the domain, identify it
@@ -34,8 +33,8 @@ class LureNotifier:
             (domain, matches) for domain, matches in potential_lures.items()
         ]
 
-    def notify(self, lures: List[Tuple[str, List[str]]]) -> List[
-        Tuple[str, List[str]]]:
+    @staticmethod
+    def notify(lures: List[Tuple[str, List[str]]]) -> List[Tuple[str, List[str]]]:
         """
         Notifies users if lures are found containing specific terms
 
