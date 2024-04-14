@@ -1,3 +1,4 @@
+import collections
 from typing import List, Tuple, Dict
 import os
 
@@ -8,52 +9,47 @@ class LureNotifier:
     ]
 
     @staticmethod
-    def identify_lures(domains: List[str]) -> List[Tuple[str, List[str]]]:
+    def identify_lures(domains: List[str]) -> set[Tuple[str, frozenset[str]]]:
         """
         Identifies potential phishing lures from a list of candidate domains.
         A domain qualifies as a potential lure if and only if it contains at
-        least two target terms.
-        :param domains: list of domains as strings
-        :return: list of tuples (domain, [matched_terms...])
+        least two target terms. Returns potential lures as a set of (domain :
+        matched target term set) pairs.
+        :param domains: List of domains as strings
+        :return: a set of 2-tuples of (domain, {matched_terms...}) pairs
         """
-        potential_lures: dict[str, List[str]] = {}
-        # Iterate thru each domain name, adding any ID'd target terms to a list
+        potential_lures: dict[str, frozenset[str]] = {}
+        # Iterate thru each domain name, adding any ID'd target terms to a set
         for domain in domains:
-            matched_terms: List[str] = []
+            matched_terms: set[str] = set()
             for target_term in LureNotifier.TARGET_TERMS:
                 if target_term in domain:
-                    matched_terms.append(target_term)
+                    matched_terms.add(target_term)
             # If we have at least 2 target terms in the domain, identify it
             # as a potential lure
             if len(matched_terms) >= 2:
-                potential_lures[domain] = matched_terms
+                potential_lures[domain] = frozenset(matched_terms)
 
-        # Return a list of 2-tuples: (domain name, matched terms list) pairs
-        return [
+        # Return a set of 2-tuples: (domain name, matched terms set) pairs
+        return {
             (domain, matches) for domain, matches in potential_lures.items()
-        ]
+        }
 
     @staticmethod
-    def notify(lures: List[Tuple[str, List[str]]]) -> List[Tuple[str, List[str]]]:
+    def notify(lures: set[Tuple[str, frozenset[str]]]) -> set[Tuple[str,
+    frozenset[str]]]:
         """
-        Notifies users if lures are found containing specific terms
-
-        :param lures: output from self.identify_lures
-        :return: list of tuples (domain, [user_ids...])
+        Given a set of potential phishing lures (domain : matched target term
+        set) pairs, alerts any team that is subscribed to the target term of the
+        phishing lure domain name.
+        In order to "alert" a team, the given team and all of the
+        team's subteams must also be alerted.
+        A team is s is a subteam given team t if s is directly supervised by t
+        or s is in indirectly supervised by t (ex. s is a subteam of team k,
+        and k is a subteam of t or k is a subteam of some subteam of ... t)
+        :param lures: the set of phisihing lures (domain :matched target term
+        set) pairs
+        :return a set of notification alerts, representted as a set of (domain :
+        alerted team id string) pairs
         """
         raise NotImplementedError()
-
-
-def test_identify_lures():
-    domains = ['paypal-login.appspot.com', 'ciscomail.com', 'cisco.heroku.com',
-               'apple.com']
-    notifier = LureNotifier()
-    # Expected: [(paypal-login.appspot.com, [paypal, login]), (ciscomail.com, [cisco, mail])]
-    return notifier.identify_lures(domains)
-
-
-def test_notify():
-    lures = test_identify_lures()
-    notifier = LureNotifier()
-    # Expected: [(paypal-login.appspot.com, [B, E]), (ciscomail.com, [A, C, K, B, E])]
-    return notifier.notify(lures)
