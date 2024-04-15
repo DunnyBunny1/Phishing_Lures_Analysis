@@ -1,6 +1,7 @@
 import collections
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Set, FrozenSet
 import os
+from data_loader import load_graph_data, load_subscriptions_data
 
 
 class LureNotifier:
@@ -52,4 +53,36 @@ class LureNotifier:
         :return a set of notification alerts, representted as a set of (domain :
         alerted team id string) pairs
         """
-        raise NotImplementedError()
+        supervisors_to_members: dict[str, set[str]] = load_graph_data()
+        term_to_members: dict[str, set[str]] = load_subscriptions_data()
+        domains_to_alerted_teams: dict[str, FrozenSet[str]] = {}
+        # For each phishing lure term in each domain, alert each team member
+        # and their respective subteams
+        for domain, matched_terms in lures:
+            domains_to_alerted_teams[domain] = bfs(
+                matched_terms, term_to_members, supervisors_to_members
+            )
+        return {
+            (domain, alerted_teams) for domain, alerted_teams in
+            domains_to_alerted_teams.items()
+        }
+
+
+def bfs(matched_terms, term_to_members, supervisors_to_members):
+    # Keep track of the members we must notify for the given term
+    members_to_be_notified = set()
+    # For each phishing term in the domain, notify each team member
+    # and each subteam
+    for term in matched_terms:
+        frontier = []
+        # Add of the immediate notifications for the given term
+        frontier.extend(term_to_members[term])
+        while frontier:  # While we have unnotified team members:
+            # Add the current member to the set of
+            curr_member = frontier.pop(0)
+            members_to_be_notified.add(curr_member)
+            # Add each team members subteams to the queue if the team
+            # member has any subteams
+            if curr_member in supervisors_to_members:
+                frontier.extend(supervisors_to_members[curr_member])
+    return frozenset(members_to_be_notified)

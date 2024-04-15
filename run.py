@@ -7,10 +7,10 @@ from data_loader import load_graph_data, load_domains, load_subscriptions_data
 
 def main():
     domains: List[str] = load_domains()
-    supervisors_to_members: dict[str, set[str]] = load_graph_data()
-    member_to_terms : dict[str, set[str]] = load_subscriptions_data()
-    potential_lures: List[Tuple[str, List[str]]] = \
+    potential_lures: set[Tuple[str, frozenset[str]]] = \
         LureNotifier.identify_lures(domains)
+    print(load_subscriptions_data())
+    print(load_graph_data())
 
 
 if __name__ == '__main__':

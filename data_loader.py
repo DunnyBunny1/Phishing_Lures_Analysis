@@ -55,8 +55,8 @@ def load_subscriptions_data() -> dict[str, set[str]]:
     subscriptions_file_path = os.path.join(
         os.getcwd(), 'subscriptions.jsonlines'
     )
-    # Maps each team member to the phishing terms they're subscribed to
-    member_to_terms: dict[str, set[str]] = {}
+    # Maps each phishing term to the team members that subscribe to that term
+    term_to_members: dict[str, set[str]] = {}
     # Open the subscriptions file in read-text mode
     with open(subscriptions_file_path, 'rt') as f:
         # Try to read each line of the file as a JSON dictionary
@@ -64,7 +64,7 @@ def load_subscriptions_data() -> dict[str, set[str]]:
             if not line:  # If the line is empty, simply continue
                 continue
             # Try to load each line's JSON string into a Python dict
-            # Each line is a mapping of member id : subscribed term pairs
+            # Each line is a mapping of subscribed term  : member id pairs
             try:
                 subscription: dict[str, str] = json.loads(line)
             # If we are unable to parse JSON of the line, move on to next line
@@ -73,8 +73,8 @@ def load_subscriptions_data() -> dict[str, set[str]]:
             # Add the term to the member's mapping of subscribed terms
             member = subscription['id']
             term = subscription['term']
-            # If a member does not have a set of mapped terms, create a new one
-            term_set = member_to_terms.setdefault(member, set())
-            term_set.add(term)  # Add the term to the member's set of terms
-            member_to_terms[member] = term_set
-    return member_to_terms
+            # If a term does not have a set of mapped members, create a new one
+            member_set = term_to_members.setdefault(term, set())
+            member_set.add(member)  # Add the member to term's set of members
+            term_to_members[term] = member_set
+    return term_to_members
