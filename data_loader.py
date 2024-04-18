@@ -5,14 +5,21 @@ from typing import List
 
 def load_graph_data() -> dict[str, set[str]]:
     """
-    Represent the graph as an adjacency set - O(1) average case lookups for
-    keys and value
+    Reads in graph JSON data and returns an adjacency set dictionary mapping
+    each supervisor to its set of team members.
+    Represents the graph as an adjacency set - O(1) average case lookups for
+    keys and value.
+    :raises ValueError if we are unable to properly read in the graph data to
+    populate the adjacency set
+    :raises FileNotFound error if the configuration file does not exist
+    :return a mapping of supervisor IDs to their set of direct team members' IDs
     """
-    file_path = os.path.join(os.getcwd(), 'graph.jsonlines')
+    file_path: str = os.path.join(os.getcwd(), 'data', 'graph.jsonlines')
+    # Mapping of supervisors to its set of team members
     supervisors_to_members: dict[str, set[str]] = {}
 
     with open(file_path, 'rt') as f:  # Open the file in read - text mode
-        # Each line contains a JSON dictionary - read thru each line
+        # Read thru each line (each line contains a JSON dictionary)
         for line in f:
             if not line:  # If the line is empty, simply continue
                 continue
@@ -21,10 +28,12 @@ def load_graph_data() -> dict[str, set[str]]:
             try:
                 relationship: dict[str, str] = json.loads(line)
             # If we are unable to parse JSON of the line, move on to next line
+            # TODO: Consider handling the error in another way (ex.
+            #  propagating it up)
             except json.decoder.JSONDecodeError:
                 continue
-            member_id = relationship['id']
-            supervisor = relationship['reports_to']
+            member_id: str = relationship['id']
+            supervisor: str = relationship['reports_to']
             # If the given member id has a supervisor...
             # Add the team member to the supervisor's set of overseen members
             if supervisor is not None:
@@ -33,15 +42,22 @@ def load_graph_data() -> dict[str, set[str]]:
                 )
                 member_list.add(member_id)
                 supervisors_to_members[supervisor] = member_list
-
+    if not supervisors_to_members:
+        raise ValueError('Supervisors to team members incorrectly populated '
+                         'with graph data')
     return supervisors_to_members
 
 
-def load_domains():
+def load_domains() -> List[str]:
+    """
+    Reads in a set of newly registered domain names and returns them as a
+    list of strings
+    :return the List of domain name strings
+    :raises FileNotFound error if the configuration file does not exist
+    """
     # Read in our domains file - each domain is separated by a \n
     file_name: str = 'domains.txt'
-    directory: str = os.getcwd()
-    file_path: str = os.path.join(directory, file_name)
+    file_path: str = os.path.join(os.getcwd(), 'data', file_name)
 
     domains: List[str] = []
     with open(file_path, 'rt') as f:  # Open the file in read - text mode
@@ -52,10 +68,18 @@ def load_domains():
 
 
 def load_subscriptions_data() -> dict[str, set[str]]:
+    """
+    Reads in subscription JSON data, where a subscription represents a target
+    term for which a team member should be alerted if a domain name containing
+    the target term is registered.
+    :return: a mapping of target terms (strings) to a set of team member IDs
+    (strings) for team members are directly subscribed to that term.
+    :raises FileNotFound error if the configuration file does not exist
+    """
     subscriptions_file_path = os.path.join(
-        os.getcwd(), 'subscriptions.jsonlines'
+        os.getcwd(), 'data', 'subscriptions.jsonlines'
     )
-    # Maps each phishing term to the team members that subscribe to that term
+    # Maps each term to the set of team members that subscribe to that term
     term_to_members: dict[str, set[str]] = {}
     # Open the subscriptions file in read-text mode
     with open(subscriptions_file_path, 'rt') as f:
